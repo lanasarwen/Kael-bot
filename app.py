@@ -3,16 +3,14 @@ import threading
 import discord
 from flask import Flask
 
-# Inicializar Flask (necesario para mantener el servicio activo en Render)
 app = Flask(__name__)
 
 
 @app.route("/")
 def home():
-  return "Kael Bot está activo y funcionando en Discord y Render."
+  return "Kael Bot está activo y funcionando."
 
 
-# Configurar los Intents de Discord (necesario para leer mensajes)
 intents = discord.Intents.default()
 intents.message_content = True
 client = discord.Client(intents=intents)
@@ -25,18 +23,14 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-  # Evitar que el bot se responda a sí mismo en bucle
   if message.author == client.user:
     return
 
-  # Detectar cuando le hablas al bot
   if message.content.startswith("!kael"):
     user_query = message.content[6:].strip()
-
-    # Respuesta de prueba para confirmar conexión
-    respuesta_ia = f"Hola, recibí tu mensaje: '{user_query}'. ¡Kael está operativo!"
-
-    await message.channel.send(respuesta_ia)
+    await message.channel.send(
+        f"Hola, recibí tu mensaje: '{user_query}'. ¡Kael está operativo!"
+    )
 
 
 def run_discord_bot():
@@ -47,12 +41,9 @@ def run_discord_bot():
     print("Error: No se encontró la variable de entorno DISCORD_TOKEN.")
 
 
-if __name__ == "__main__":
-  # Ejecutar el bot de Discord en un hilo secundario para que no bloquee a Flask
-  discord_thread = threading.Thread(target=run_discord_bot)
-  discord_thread.daemon = True
-  discord_thread.start()
+# Iniciar el hilo del bot de Discord para que corra junto con Flask/Gunicorn en Render
+threading.Thread(target=run_discord_bot, daemon=True).start()
 
-  # Ejecutar Flask en el puerto que exige Render
+if __name__ == "__main__":
   port = int(os.environ.get("PORT", 5000))
   app.run(host="0.0.0.0", port=port)

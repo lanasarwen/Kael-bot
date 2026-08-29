@@ -1,5 +1,5 @@
 flask
 requests
-google-genai
+google-generativeai
 gunicorn
 discord.py

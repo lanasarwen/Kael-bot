@@ -1,43 +1,40 @@
 import os
-import random
-from flask import Flask
+import threading
 import discord
+import google.generativeai as genai
+from flask import Flask
 
 app = Flask(__name__)
 
 
 @app.route("/")
 def home():
-  return "Kael Bot está activo y operando."
+  return "Kael Bot potenciado por IA está activo."
 
 
 intents = discord.Intents.default()
 intents.message_content = True
-
 client = discord.Client(intents=intents)
 
-
-def estilizar_respuesta(user_query):
-  q = user_query.lower()
-
-  if "hola" in q:
-    return "¡Qué onda! ¿Qué andamos maquinando hoy?"
-  elif "chiste" in q:
-    return (
-        "¿Cómo se despiden los químicos? Ácido un placer... lo sé, un clásico"
-        " terrible."
-    )
-  elif "bien" in q or "genial" in q or "excelente" in q:
-    return "¡Eso me gusta! Con toda la energía."
-  elif not q:
-    return "¿Me llamaste y te quedaste en blanco? Jaja, dime."
-
-  frases_casuales = [
-      f"A ver, sobre eso de '{user_query}'... me suena interesante, cuéntame más.",
-      f"Interesante punto con lo de '{user_query}'. ¿Por dónde quieres que lo veamos?",
-      f"Leído. Analizando '{user_query}'... Bueno, fuera de bromas, ¿qué más planeas hacer con eso?",
-  ]
-  return random.choice(frases_casuales)
+# Configurar la API de Gemini con su personalidad base (System Instruction)
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if GEMINI_API_KEY:
+  genai.configure(api_key=GEMINI_API_KEY)
+  # Aquí defines cómo quieres que hable, su tono y su estilo
+  system_prompt = (
+      "Eres Kael, un asistente virtual con una personalidad casual, amigable,"
+      " un toque tecnológico/ciberpunk y muy fluido. Respondes de forma"
+      " natural, concisa y conversacional en los chats de Discord, evitando"
+      " sonar como un robot corporativo aburrido."
+  )
+  generation_config = {"temperature": 0.8}
+  model = genai.GenerativeModel(
+      model_name="gemini-2.5-flash",
+      system_instruction=system_prompt,
+      generation_config=generation_config,
+  )
+else:
+  model = None
 
 
 @client.event
@@ -47,27 +44,41 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-  print(f"Mensaje recibido de {message.author}: {message.content}")
   if message.author == client.user:
     return
 
   if message.content.lower().startswith("!kael"):
     user_query = message.content[5:].strip()
-    respuesta = estilizar_respuesta(user_query)
-    await message.channel.send(respuesta)
+
+    if not model:
+      await message.channel.send(
+          "Error: Falta configurar la variable GEMINI_API_KEY en Render."
+      )
+      return
+
+    if not user_query:
+      user_query = "Hola, salúdame de forma casual."
+
+    try:
+      # Enviar la consulta a la IA y obtener la respuesta fluida
+      response = model.generate_content(user_query)
+      await message.channel.send(response.text)
+    except Exception as e:
+      await message.channel.send(
+          "Uf, tuve un pequeño cortocircuito procesando eso en la red."
+      )
+      print(f"Error generando contenido: {e}")
 
 
 if __name__ == "__main__":
-  import threading
 
   def run_flask():
     app.run(host="0.0.0.0", port=10000)
 
-  t = threading.Thread(target=run_flask)
-  t.start()
+  threading.Thread(target=run_flask, daemon=True).start()
 
   TOKEN = os.getenv("DISCORD_TOKEN")
-  if not TOKEN:
-    print("Error: No se encontró la variable de entorno DISCORD_TOKEN.")
-  else:
+  if TOKEN:
     client.run(TOKEN)
+  else:
+    print("Error: No se encontró la variable DISCORD_TOKEN.")

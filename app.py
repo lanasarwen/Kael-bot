@@ -23,6 +23,9 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
+  print(
+      f"Mensaje recibido de {message.author}: {message.content}"
+  )  # <--- Esto se verá en Render
   if message.author == client.user:
     return
 
@@ -31,7 +34,6 @@ async def on_message(message):
     await message.channel.send(
         f"Hola, recibí tu mensaje: '{user_query}'. ¡Kael está operativo!"
     )
-
 
 def run_discord_bot():
   token = os.getenv("DISCORD_TOKEN")

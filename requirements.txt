@@ -1,5 +1,4 @@
-flask
+discord.py
+Flask
 requests
 google-generativeai
-gunicorn
-discord.py

@@ -1,5 +1,6 @@
 import os
 import threading
+import traceback
 import requests
 import discord
 import google.generativeai as genai
@@ -53,8 +54,8 @@ def update_kael_mood(message_text):
       "bueno",
   ]
   negative_words = [
-      "tonto",
-      "idiota",
+      "No tengo ganas de hablar ahora",
+      "No me esta gustando como me hablas",
       "mal",
       "inútil",
       "cállate",
@@ -74,6 +75,7 @@ def update_kael_mood(message_text):
 def text_to_speech_elevenlabs(text_response):
   """Convierte la respuesta de texto en audio MP3 usando ElevenLabs."""
   if not ELEVENLABS_API_KEY or not VOICE_ID:
+    print("ElevenLabs no está configurado (faltan API Key o Voice ID).")
     return None
 
   url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
@@ -95,8 +97,10 @@ def text_to_speech_elevenlabs(text_response):
       with open(audio_path, "wb") as f:
         f.write(response.content)
       return audio_path
+    else:
+      print(f"Error en ElevenLabs (Código {response.status_code}): {response.text}")
   except Exception as e:
-    print(f"Error conectando con ElevenLabs: {e}")
+    print(f"Excepción conectando con ElevenLabs: {e}")
   return None
 
 
@@ -164,10 +168,13 @@ async def on_message(message):
         await message.channel.send(response_text)
 
     except Exception as e:
+      # Esto imprimirá el rastro completo del error en los Logs de Render
+      print("=== ERROR CRÍTICO DETECTADO ===")
+      traceback.print_exc()
+      print(f"Mensaje de error: {e}")
       await message.channel.send(
           "Uf, tuve un pequeño cortocircuito procesando eso en la red."
       )
-      print(f"Error generando contenido: {e}")
 
 
 if __name__ == "__main__":

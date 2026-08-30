@@ -29,7 +29,7 @@ if GEMINI_API_KEY:
   genai.configure(api_key=GEMINI_API_KEY)
   generation_config = {"temperature": 0.8}
   model = genai.GenerativeModel(
-      model_name="gemini-2.5-flash",
+      model_name="gemini-1.5-flash",
       generation_config=generation_config,
   )
 else:
@@ -147,9 +147,9 @@ async def on_message(message):
         """
 
     try:
-      # Instanciar el modelo con el system instruction dinámico según el estado actual
+      # Instanciar el modelo con el system instruction dinámico usando gemini-1.5-flash
       chat_model = genai.GenerativeModel(
-          model_name="gemini-2.5-flash",
+          model_name="gemini-1.5-flash",
           system_instruction=system_prompt,
           generation_config={"temperature": 0.8},
       )
